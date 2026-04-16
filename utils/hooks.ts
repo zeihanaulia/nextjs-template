@@ -101,29 +101,33 @@ export function useDendronRouter() {
  */
 export function useDendronLookup(notes?: NotePropsByIdDict) {
   const engine = useEngineAppSelector((state) => state.engine);
-  const config = engine.config as DendronConfig;
-  const fuzzThreshold = ConfigUtils.getLookup(config).note.fuzzThreshold;
+  const config = engine.config as DendronConfig | undefined;
+  const fuzzThreshold = config
+    ? ConfigUtils.getLookup(config).note.fuzzThreshold
+    : 0.6;
 
   const [noteIndex, setNoteIndex] = React.useState<FuseEngine | undefined>(
     undefined
   );
   React.useEffect(() => {
-    if (notes) {
-      const noteIndex = new FuseEngine({ mode: "fuzzy", fuzzThreshold });
-      noteIndex.notesIndex.setCollection(
-        _.map(notes, ({ fname, title, id, vault, updated, stub }, _key) => ({
-          fname,
-          id,
-          title,
-          vault,
-          updated,
-          stub,
-        }))
-      );
-
-      setNoteIndex(noteIndex);
+    if (!notes) {
+      return;
     }
-  }, [notes]);
+
+    const newNoteIndex = new FuseEngine({ mode: "fuzzy", fuzzThreshold });
+    newNoteIndex.notesIndex.setCollection(
+      _.map(notes, ({ fname, title, id, vault, updated, stub }, _key) => ({
+        fname,
+        id,
+        title,
+        vault,
+        updated,
+        stub,
+      }))
+    );
+
+    setNoteIndex(newNoteIndex);
+  }, [notes, fuzzThreshold]);
   return noteIndex;
 }
 

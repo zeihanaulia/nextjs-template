@@ -6,10 +6,7 @@ import { useEffect, useState } from "react";
 import { useEngineAppSelector } from "../features/engine/hooks";
 import { GAType, initGA, logPageView } from "../utils/analytics";
 
-const getGAType = (id: string) => {
-  if (id.startsWith("UA")) {
-    return GAType.UNIVERSAL_ANALYTICS;
-  }
+const getGAType = (_id: string) => {
   return GAType.G4A;
 };
 

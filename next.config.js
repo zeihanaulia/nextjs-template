@@ -8,8 +8,19 @@ const isProd = process.env.NODE_ENV !== "development";
 
 // NOTE: __dirname is the dirname where this configuration file is located
 const payload = {
-  reactStrictMode: true,
+  reactStrictMode: false, // Ant Design v4 rc-menu uses findDOMNode which breaks in React 18 strict mode
   trailingSlash: true,
+  // Stub Node.js built-ins that @dendronhq/common-frontend pulls in via
+  // @aws-amplify/core → @aws-sdk. These are server-only; the browser bundle
+  // never actually calls them, but Turbopack requires explicit aliases.
+  turbopack: {
+    root: __dirname,
+    resolveAlias: {
+      'child_process': { browser: './utils/empty-node-module' },
+      'fs': { browser: './utils/empty-node-module' },
+      'http2': { browser: './utils/empty-node-module' },
+    },
+  },
   basePath:
     isProd && NEXT_PUBLIC_ASSET_PREFIX ? NEXT_PUBLIC_ASSET_PREFIX : undefined,
   assetPrefix:
@@ -19,7 +30,6 @@ const payload = {
     PUBLIC_DIR,
   },
   distDir: BUILD_DIR || '.next',
-  swcMinify: true,
 };
 
 if (!isProd && process.env.ANALYZE) {

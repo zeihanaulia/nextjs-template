@@ -185,7 +185,14 @@ function DendronSearchComponent(props: DendronCommonProps & SearchProps) {
         return;
       }
 
-      const id = option.key?.toString()!;
+      const id =
+        option.key?.toString() ||
+        option.props?.["data-note-id"] ||
+        option.props?.["data-id"];
+      if (!id) {
+        return;
+      }
+
       dendronRouter.changeActiveNote(id, { noteIndex });
       dispatch(
         browserEngineSlice.actions.setLoadingStatus(LoadingStatus.PENDING)
@@ -215,7 +222,11 @@ function DendronSearchComponent(props: DendronCommonProps & SearchProps) {
   } else if (searchMode === SearchMode.SEARCH) {
     autocompleteChildren = searchResults?.map(({ item: note, matches }) => {
       return (
-        <AutoComplete.Option key={note.id} value={note.fname}>
+        <AutoComplete.Option
+        key={note.id}
+        value={note.fname}
+        data-note-id={note.id}
+      >
           <Row justify="center" align="middle">
             <Col xs={0} md={1}>
               <div style={{ position: "relative", top: -12, left: 0 }}>
@@ -267,7 +278,11 @@ function DendronSearchComponent(props: DendronCommonProps & SearchProps) {
   } else {
     autocompleteChildren = lookupResults.map((noteIndex: NoteIndexProps) => {
       return (
-        <AutoComplete.Option key={noteIndex.id} value={noteIndex.fname}>
+        <AutoComplete.Option
+          key={noteIndex.id}
+          value={noteIndex.fname}
+          data-note-id={noteIndex.id}
+        >
           <div>{noteIndex.fname}</div>
         </AutoComplete.Option>
       );

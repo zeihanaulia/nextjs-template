@@ -16,19 +16,17 @@ export default function DendronLogoOrTitle() {
   const publishingConfig = ConfigUtils.getPublishing(engine.config);
 
   return (
-    <Link href={getRootUrl(publishingConfig)}>
-      {/* eslint-disable-next-line jsx-a11y/anchor-is-valid -- `href` will be provided by `Link` */}
-      <a
-        style={{
-          display: "inline-block",
-          height: DENDRON_STYLE_CONSTANTS.HEADER.HEIGHT,
-          padding: "4px",
-          width: "100%",
-        }}
-        className="site-title"
-      >
-        {logoUrl ? <Logo logoUrl={logoUrl} /> : <Title data={title || ""} />}
-      </a>
+    <Link
+      href={getRootUrl(publishingConfig)}
+      style={{
+        display: "inline-block",
+        height: DENDRON_STYLE_CONSTANTS.HEADER.HEIGHT,
+        padding: "4px",
+        width: "100%",
+      }}
+      className="site-title"
+    >
+      {logoUrl ? <Logo logoUrl={logoUrl} /> : <Title data={title || ""} />}
     </Link>
   );
 }

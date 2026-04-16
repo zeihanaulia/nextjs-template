@@ -56,9 +56,15 @@ export default function DendronTreeMenu(
 
     // all parents should be in expanded position
     const newActiveNoteIds = TreeUtils.getAllParents({
-      child2parent: tree.child2parent,
+      child2parent: tree.child2parent ?? {},
       noteId: noteActiveId,
     });
+
+    const activeNote = findTreeNode(tree.roots, noteActiveId);
+
+    if (activeNote && activeNote.children?.length) {
+      newActiveNoteIds.push(noteActiveId);
+    }
 
     setActiveNoteIds(newActiveNoteIds);
     return undefined;
@@ -89,19 +95,16 @@ export default function DendronTreeMenu(
 
   const onExpand = (noteId: string) => {
     logger.info({ ctx: "onExpand", id: noteId });
-    if (_.isUndefined(notes)) {
-      return;
-    }
     const expanded = expandKeys.includes(noteId);
     // open up
     if (expanded) {
       setActiveNoteIds(
-        TreeUtils.getAllParents({ child2parent: tree.child2parent, noteId })
+        TreeUtils.getAllParents({ child2parent: tree.child2parent ?? {}, noteId })
       );
     } else {
       setActiveNoteIds(
         TreeUtils.getAllParents({
-          child2parent: tree.child2parent,
+          child2parent: tree.child2parent ?? {},
           noteId,
         }).concat([noteId])
       );
@@ -113,6 +116,9 @@ export default function DendronTreeMenu(
       {...props}
       roots={roots}
       expandKeys={expandKeys}
+      onOpenChange={(keys) => {
+        setActiveNoteIds(keys);
+      }}
       onSubMenuSelect={onSubMenuSelect}
       onMenuItemClick={onMenuItemClick}
       onExpand={onExpand}
@@ -127,6 +133,7 @@ export default function DendronTreeMenu(
 function MenuView({
   roots,
   expandKeys,
+  onOpenChange,
   onSubMenuSelect,
   onMenuItemClick,
   onExpand,
@@ -136,6 +143,7 @@ function MenuView({
 }: {
   roots: DataNode[];
   expandKeys: string[];
+  onOpenChange: (keys: string[]) => void;
   onSubMenuSelect: (noteId: string) => void;
   onMenuItemClick: (noteId: string) => void;
   onExpand: (noteId: string) => void;
@@ -178,14 +186,6 @@ function MenuView({
               onSubMenuSelect={onSubMenuSelect}
             />
           }
-          onTitleClick={(event) => {
-            const target = event.domEvent.target as HTMLElement;
-            const isAnchor = target.nodeName === "A";
-            // only expand SubMenu when not an anchor, which means that a page transition will occur.
-            if (!isAnchor) {
-              onExpand(event.key);
-            }
-          }}
         >
           {menu.children.map((childMenu: DataNode) => {
             return createMenu(childMenu);
@@ -215,6 +215,7 @@ function MenuView({
         openKeys: expandKeys,
         selectedKeys: [...expandKeys, activeNote],
       })}
+      onOpenChange={onOpenChange}
       inlineIndent={DENDRON_STYLE_CONSTANTS.SIDER.INDENT}
       // @ts-ignore
       expandIcon={ExpandIcon}
@@ -247,19 +248,12 @@ function MenuItemTitle(
         href={getNoteUrl(props.menu.key as string, {
           noteIndex: props.noteIndex!,
         })}
-        passHref
+        onClick={() => {
+          props.onSubMenuSelect(props.menu.key as string);
+        }}
       >
-        <a
-          href={
-            "dummy" /* a way to dodge eslint warning that conflicts with `next/link`. see https://github.com/vercel/next.js/discussions/32233#discussioncomment-1766768*/
-          }
-          onClick={() => {
-            props.onSubMenuSelect(props.menu.key as string);
-          }}
-        >
-          {/* @ts-ignore */}
-          {props.menu.title}
-        </a>
+        {/* @ts-ignore */}
+        {props.menu.title}
       </Link>
     </Typography.Text>
   );
@@ -306,4 +300,22 @@ function treeMenuNode2DataNode({
       };
     })
     .filter(isNotUndefined);
+}
+
+function findTreeNode(
+  nodes: TreeMenuNode[],
+  key: string
+): TreeMenuNode | undefined {
+  for (const node of nodes) {
+    if (node.key === key) {
+      return node;
+    }
+    const childMatch = node.children?.length
+      ? findTreeNode(node.children, key)
+      : undefined;
+    if (childMatch) {
+      return childMatch;
+    }
+  }
+  return undefined;
 }
