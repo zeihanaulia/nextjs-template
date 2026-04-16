@@ -1,0 +1,10 @@
+#!/bin/sh
+# Pre-push hook: runs TypeScript typecheck before push.
+# Install: make install-hooks
+
+set -e
+
+echo "🔍 Running typecheck before push..."
+npm run typecheck
+
+echo "✅ Typecheck passed."
