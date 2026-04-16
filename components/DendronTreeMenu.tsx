@@ -41,9 +41,9 @@ export default function DendronTreeMenu(
   const logger = createLogger("DendronTreeMenu");
   const dendronRouter = useDendronRouter();
   const [activeNoteIds, setActiveNoteIds] = useState<string[]>([]);
-  const noteActiveId = _.isUndefined(dendronRouter.query.id)
+  const noteActiveId = _.isUndefined(dendronRouter.query.slug)
     ? props.noteIndex?.id
-    : dendronRouter.query.id;
+    : dendronRouter.getActiveNoteId();
 
   // set `activeNoteIds`
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function DendronTreeMenu(
 
     setActiveNoteIds(newActiveNoteIds);
     return undefined;
-  }, [props.noteIndex, dendronRouter.query.id, noteActiveId, tree]);
+  }, [props.noteIndex, dendronRouter.query.slug, noteActiveId, tree]);
 
   const { notes, collapsed, setCollapsed } = props;
 
