@@ -4,7 +4,9 @@ import { env } from "../env/client";
 
 export function getNoteUrl(opts: { note: NoteProps; noteIndex: NoteProps }) {
   const { note, noteIndex } = opts;
-  return note.id === noteIndex.id ? "/" : `/notes/${note.id}`;
+  return note.id === noteIndex.id
+    ? "/"
+    : `/${note.fname.split(".").join("/")}`;
 }
 
 export function getAssetUrl(url: string) {

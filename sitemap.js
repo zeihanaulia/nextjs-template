@@ -67,7 +67,7 @@ function getNotes() {
 exports.getNotes = getNotes;
 function getNoteUrl(opts) {
     var note = opts.note, noteIndex = opts.noteIndex;
-    return note.id === noteIndex.id ? "/" : "/notes/" + note.id;
+    return note.id === noteIndex.id ? "/" : "/" + note.fname.split(".").join("/");
 }
 exports.getNoteUrl = getNoteUrl;
 function getRootUrlStatic() {

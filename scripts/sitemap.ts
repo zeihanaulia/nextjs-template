@@ -24,19 +24,21 @@ export function getDataDir(): string {
   return dataDir;
 }
 
-export function getNotes() {
+export function getNotes(): NoteData {
   if (_.isUndefined(_NOTES_CACHE)) {
     const dataDir = getDataDir();
     _NOTES_CACHE = fs.readJSONSync(
       path.join(dataDir, "notes.json")
     ) as NoteData;
   }
-  return _NOTES_CACHE;
+  return _NOTES_CACHE as NoteData;
 }
 
 export function getNoteUrl(opts: { note: NoteProps; noteIndex: NoteProps }) {
   const { note, noteIndex } = opts;
-  return note.id === noteIndex.id ? "/" : `/notes/${note.id}`;
+  return note.id === noteIndex.id
+    ? "/"
+    : `/${note.fname.split(".").join("/")}`;
 }
 
 function getRootUrlStatic() {

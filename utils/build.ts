@@ -39,7 +39,7 @@ export function getNotes(): NoteData {
       path.join(dataDir, "notes.json")
     ) as NoteData;
   }
-  return _NOTES_CACHE;
+  return _NOTES_CACHE as NoteData;
 }
 
 const NOTE_REF_DIR = "refs";
@@ -66,8 +66,19 @@ export function getNoteRefs() {
 }
 
 export interface DendronNotePageParams extends ParsedUrlQuery {
-  id: string;
+  slug: string[];
 }
+
+function getSlugPath(slug: string | string[]): string {
+  return Array.isArray(slug) ? slug.join("/") : slug;
+}
+
+function getNoteBySlug(slug: string | string[]) {
+  const slugPath = getSlugPath(slug);
+  const { notes } = getNotes();
+  return _.find(notes, (note) => note.fname.split(".").join("/") === slugPath);
+}
+
 /**
  * Generate URLs for all exported pages
  * For use with getStaticProps
@@ -76,11 +87,10 @@ export interface DendronNotePageParams extends ParsedUrlQuery {
  */
 export function getNotePaths(): GetStaticPathsResult<DendronNotePageParams> {
   const { notes, noteIndex } = getNotes();
-  // filter out the index node
-  const paths = Object.keys(notes)
-    .filter((id) => id !== noteIndex.id)
-    .map((id) => {
-      return { params: { id } };
+  const paths = Object.values(notes)
+    .filter((note) => note.id !== noteIndex.id)
+    .map((note) => {
+      return { params: { slug: note.fname.split(".") } };
     });
   return {
     paths,
@@ -94,6 +104,10 @@ export function getNotePaths(): GetStaticPathsResult<DendronNotePageParams> {
 export function getNoteMeta(id: string): Promise<NoteProps> {
   const dataDir = getDataDir();
   return fs.readJSON(path.join(dataDir, NOTE_META_DIR, `${id}.json`));
+}
+
+export function getNoteBySlugPath(slug: string | string[]) {
+  return getNoteBySlug(slug);
 }
 
 let _CONFIG_CACHE: DendronConfig | undefined;

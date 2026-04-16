@@ -1,10 +1,10 @@
 import { DendronError, error2PlainObject } from "@dendronhq/common-all";
 import _ from "lodash";
 import { GetStaticPaths, GetStaticProps } from "next";
-import { prepChildrenForCollection } from "../../components/DendronCollection";
+import { prepChildrenForCollection } from "../components/DendronCollection";
 import DendronNotePage, {
   DendronNotePageProps,
-} from "../../components/DendronNotePage";
+} from "../components/DendronNotePage";
 import {
   DendronNotePageParams,
   getConfig,
@@ -12,8 +12,9 @@ import {
   getNoteBody,
   getNoteMeta,
   getNotePaths,
+  getNoteBySlugPath,
   getNotes,
-} from "../../utils/build";
+} from "../utils/build";
 
 export default DendronNotePage;
 
@@ -28,22 +29,32 @@ export const getStaticProps: GetStaticProps<
     throw Error("params required");
   }
 
-  const { id } = params;
+  const { slug } = params;
 
-  if (!_.isString(id)) {
-    throw Error("id required");
+  if (!slug) {
+    throw Error("slug required");
+  }
+
+  const note = getNoteBySlugPath(slug);
+  if (_.isUndefined(note)) {
+    return {
+      notFound: true,
+    };
   }
 
   try {
-    const [body, note] = await Promise.all([getNoteBody(id), getNoteMeta(id)]);
+    const [body, noteMeta] = await Promise.all([
+      getNoteBody(note.id),
+      getNoteMeta(note.id),
+    ]);
     const noteData = getNotes();
     const customHeadContent: string | null = await getCustomHead();
     const { notes, noteIndex } = noteData;
-    const collectionChildren = note.custom?.has_collection
-      ? prepChildrenForCollection(note, notes)
+    const collectionChildren = noteMeta.custom?.has_collection
+      ? prepChildrenForCollection(noteMeta, notes)
       : null;
     const props: DendronNotePageProps = {
-      note,
+      note: noteMeta,
       body,
       noteIndex,
       collectionChildren,

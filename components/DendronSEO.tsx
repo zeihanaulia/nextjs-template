@@ -55,11 +55,7 @@ export default function DendronSEO({
   const path = dendronRouter.router.asPath;
 
   // don't generate for following pages
-  if (
-    _.some(["403"], (ent) => {
-      return path === `/notes/${ent}/`;
-    })
-  ) {
+  if (path === "/403") {
     return null;
   }
 

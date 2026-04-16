@@ -14,7 +14,7 @@ import { useEngineAppSelector } from "../features/engine/hooks";
 import { fetchNoteBody } from "./fetchers";
 
 export type NoteRouterQuery = {
-  id: string;
+  slug?: string | string[];
 };
 
 export type DendronRouterProps = ReturnType<typeof useDendronRouter>;
@@ -23,15 +23,44 @@ export function getNoteRouterQuery(router: NextRouter) {
   return router.query as Partial<NoteRouterQuery>;
 }
 
+function getSlugPath(slug?: string | string[]) {
+  if (_.isUndefined(slug)) {
+    return undefined;
+  }
+  return Array.isArray(slug) ? slug.join("/") : slug;
+}
+
+function getNoteIdFromSlug(
+  slug: string | string[] | undefined,
+  notes?: NotePropsByIdDict
+) {
+  if (_.isUndefined(slug) || _.isUndefined(notes)) {
+    return undefined;
+  }
+  const slugPath = getSlugPath(slug);
+  return _.chain(notes)
+    .values()
+    .find((note) => note.fname.split(".").join("/") === slugPath)
+    .get("id")
+    .value() as string | undefined;
+}
+
 export function useDendronRouter() {
   const router = useRouter();
   const query = getNoteRouterQuery(router);
+  const engine = useEngineAppSelector((state) => state.engine);
+  const notes = engine.notes;
+
   const getNoteUrl = (
     id: string,
-    opts: { noteIndex: NoteProps | undefined }
+    opts: { noteIndex: NoteProps }
   ) => {
-    if (id === opts?.noteIndex?.id) {
+    if (id === opts.noteIndex.id) {
       return `/`;
+    }
+    const note = notes?.[id];
+    if (note) {
+      return `/${note.fname.split(".").join("/")}`;
     }
     return `/notes/${id}`;
   };
@@ -44,17 +73,16 @@ export function useDendronRouter() {
   }: {
     notes: NotePropsByIdDict;
   }): NoteProps | undefined => {
-    const maybeIdByQuery = query?.id;
-    return !_.isUndefined(maybeIdByQuery) ? notes[maybeIdByQuery] : undefined;
+    const maybeSlug = query?.slug;
+    const id = getNoteIdFromSlug(maybeSlug, notes);
+    return id ? notes[id] : undefined;
   };
 
   const getActiveNoteId = () => {
-    // assume home page
-    if (!router.asPath.startsWith("/notes")) {
+    if (_.isUndefined(query.slug)) {
       return "root";
-    } else {
-      return query.id;
     }
+    return getNoteIdFromSlug(query.slug, notes);
   };
 
   return {
