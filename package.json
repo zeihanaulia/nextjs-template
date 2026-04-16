@@ -63,6 +63,8 @@
   },
   "overrides": {
     "trim": "0.0.3",
-    "@types/react": "17.0.38"
+    "@types/react": "17.0.38",
+    "@babel/traverse": ">=7.23.2",
+    "axios": ">=1.7.4"
   }
 }
