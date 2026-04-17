@@ -30,21 +30,14 @@ export function DendronBreadCrumb(props: DendronCommonProps) {
     noteId: noteActive.id,
   }).concat(noteActive.id);
   const noteParents = noteIdPareents.map((noteId) => props.notes[noteId]);
+  const items = noteParents.map((note) => ({
+    key: note.id,
+    title: (
+      <Link href={getNoteUrl({ note, noteIndex: props.noteIndex })}>
+        {tree?.notesLabelById?.[note.id] ?? note.title}
+      </Link>
+    ),
+  }));
 
-  return (
-    // @ts-ignore antd v4 Breadcrumb accepts children but types don't reflect this with @types/react@18
-    <Breadcrumb style={{ margin: "16px 0" }}>
-      {_.map(noteParents, (note) => {
-        const dest = getNoteUrl({ note, noteIndex: props.noteIndex });
-        return (
-          // @ts-ignore
-          <Breadcrumb.Item key={note.id}>
-            <Link href={dest}>
-              {tree?.notesLabelById?.[note.id] ?? note.title}
-            </Link>
-          </Breadcrumb.Item>
-        );
-      })}
-    </Breadcrumb>
-  );
+  return <Breadcrumb style={{ margin: "16px 0" }} items={items} />;
 }

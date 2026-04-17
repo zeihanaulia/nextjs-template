@@ -28,7 +28,7 @@
     "@dendronhq/common-all": "^0.116.3",
     "@dendronhq/common-frontend": "^0.116.3",
     "@giscus/react": "^2.2.0",
-    "antd": "^4.15.5",
+    "antd": "^5.4.0",
     "fs-extra": "^10.0.0",
     "html-react-parser": "^5.1.18",
     "import-fresh": "^3.3.0",

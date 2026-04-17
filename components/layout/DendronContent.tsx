@@ -14,12 +14,18 @@ export const DendronContent: React.FC<any> = (props) => {
     <Content
       className="side-layout-main"
       style={{
-        maxWidth: "1200px",
+        flex: 1,
         minWidth: 0,
         display: !isSidebarCollapsed && isResponsive ? "none" : "block",
       }}
     >
-      <div style={{ padding: `0 ${LAYOUT.PADDING}px` }}>
+      <div
+        style={{
+          padding: `${LAYOUT.PADDING + 24}px ${LAYOUT.PADDING}px 0`,
+          maxWidth: "1200px",
+          margin: "0 auto",
+        }}
+      >
         <DendronBreadCrumb {...props} />
         <div className="main-content" role="main">
           {props.children}

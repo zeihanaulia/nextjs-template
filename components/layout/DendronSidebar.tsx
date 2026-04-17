@@ -19,16 +19,12 @@ export const DendronSideBar: React.FC<any> = (props) => {
       className="site-layout-sidebar"
       style={{
         flex: "0 0 auto",
-        width: `calc(max((100% - ${LAYOUT.BREAKPOINTS.lg}) / 2, 0px) + ${
-          // eslint-disable-next-line no-nested-ternary
-          isResponsive
-            ? isSidebarCollapsed
-              ? SIDER.COLLAPSED_WIDTH
-              : "100%"
-            : SIDER.WIDTH
-        }px)`,
+        width: isResponsive
+          ? "100%"
+          : typeof SIDER.WIDTH === "number"
+          ? `${SIDER.WIDTH}px`
+          : SIDER.WIDTH,
         minWidth: isResponsive || isSidebarCollapsed ? 0 : SIDER.WIDTH,
-        paddingLeft: `calc((100% - ${LAYOUT.BREAKPOINTS.lg}) / 2)`,
       }}
     >
       <Sider
@@ -45,6 +41,7 @@ export const DendronSideBar: React.FC<any> = (props) => {
         }}
         style={{
           position: "fixed",
+          top: HEADER.HEIGHT,
           overflow: "auto",
           height: `calc(100vh - ${HEADER.HEIGHT}px)`,
           backgroundColor: `transparent`,

@@ -8,7 +8,7 @@ const isProd = process.env.NODE_ENV !== "development";
 
 // NOTE: __dirname is the dirname where this configuration file is located
 const payload = {
-  reactStrictMode: false, // Ant Design v4 rc-menu uses findDOMNode which breaks in React 18 strict mode
+  reactStrictMode: true,
   devIndicators: false, // disable: accesses window.next.router.components before router init → TypeError
   trailingSlash: true,
   // Stub Node.js built-ins that @dendronhq/common-frontend pulls in via

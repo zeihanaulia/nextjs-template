@@ -4,8 +4,6 @@ import { Anchor } from "antd";
 import _ from "lodash";
 import type { ComponentProps } from "react";
 
-const Link = Anchor.Link;
-
 const unslug = (slugs: string) => {
   slugs = slugs.replace(/_/g, "-");
   slugs = slugs.replace(/--/g, "-");
@@ -22,22 +20,16 @@ export const DendronTOC = ({
 }: {
   note: NoteProps;
 } & ComponentProps<typeof Anchor>) => {
+  const items = Object.entries(note?.anchors)
+    .filter(([, entry]) => entry?.type === "header")
+    .map(([key, entry]) => ({
+      key,
+      href: `#${key}`,
+      title: entry?.text ?? unslug(String(entry?.value ?? "")),
+    }));
+
   return (
-    <Anchor style={{ zIndex: 1 }} className="dendron-toc" {...rest}>
-      {Object.entries(note?.anchors).map(([key, entry]) => (
-        <React.Fragment key={key}>
-          {entry?.type === "header" ? (
-            <Link
-              href={`#${key}`}
-              // `anchor.text` contains clean, user displayable text for
-              // headings. It should always exist for exported notes, but we
-              // have this fallback just in case.
-              title={entry?.text ?? unslug(entry?.value)}
-            />
-          ) : null}
-        </React.Fragment>
-      ))}
-    </Anchor>
+    <Anchor style={{ zIndex: 1 }} className="dendron-toc" items={items} {...rest} />
   );
 };
 

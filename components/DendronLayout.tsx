@@ -21,6 +21,9 @@ export default function DendronLayout(
           marginTop: 64,
           display: "flex",
           flexDirection: "row",
+          width: "100%",
+          maxWidth: "1200px",
+          margin: "0 auto",
         }}
       >
         <DendronSideBar {...props} />

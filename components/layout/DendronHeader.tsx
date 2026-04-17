@@ -27,7 +27,7 @@ export const DendronHeader: React.FC<any> = (props) => {
       <Row
         justify="center"
         style={{
-          maxWidth: "992px",
+          maxWidth: "1200px",
           justifyContent: "space-between",
           margin: "0 auto",
         }}

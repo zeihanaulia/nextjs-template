@@ -12,7 +12,7 @@ import {
   Provider,
   setLogLevel,
 } from "@dendronhq/common-frontend";
-import "antd/dist/antd.css";
+import "antd/dist/reset.css";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import { useRouter } from "next/router";

@@ -9,26 +9,14 @@ import { isNotUndefined, TreeMenuNode, TreeUtils } from "@dendronhq/common-all";
 import { createLogger } from "@dendronhq/common-frontend";
 import { Typography } from "antd";
 import _ from "lodash";
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { DataNode } from "rc-tree/lib/interface";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
+import type { DataNode } from "rc-tree/lib/interface";
 import { useCombinedSelector } from "../features";
 import { DENDRON_STYLE_CONSTANTS } from "../styles/constants";
 import { useDendronRouter } from "../utils/hooks";
 import { NoteData } from "../utils/types";
-
-const Menu = dynamic(() => import("./AntdMenuWrapper"), {
-  ssr: false,
-});
-
-const SubMenu = dynamic(() => import("./AntdSubMenuWrapper"), {
-  ssr: false,
-});
-
-const MenuItem = dynamic(() => import("./AntdMenuItemWrapper"), {
-  ssr: false,
-});
 
 export default function DendronTreeMenu(
   props: Partial<NoteData> & {
@@ -116,9 +104,6 @@ export default function DendronTreeMenu(
       {...props}
       roots={roots}
       expandKeys={expandKeys}
-      onOpenChange={(keys) => {
-        setActiveNoteIds(keys);
-      }}
       onSubMenuSelect={onSubMenuSelect}
       onMenuItemClick={onMenuItemClick}
       onExpand={onExpand}
@@ -133,7 +118,6 @@ export default function DendronTreeMenu(
 function MenuView({
   roots,
   expandKeys,
-  onOpenChange,
   onSubMenuSelect,
   onMenuItemClick,
   onExpand,
@@ -143,10 +127,9 @@ function MenuView({
 }: {
   roots: DataNode[];
   expandKeys: string[];
-  onOpenChange: (keys: string[]) => void;
-  onSubMenuSelect: (noteId: string) => void;
-  onMenuItemClick: (noteId: string) => void;
-  onExpand: (noteId: string) => void;
+  onSubMenuSelect: (keys: string) => void;
+  onMenuItemClick: (key: string) => void;
+  onExpand: (key: string) => void;
   collapsed: boolean;
   activeNote: string;
 } & Partial<NoteData>) {
@@ -158,7 +141,7 @@ function MenuView({
         <i data-expandedicon="true">
           <Icon
             style={{
-              pointerEvents: "none", // only allow custom element to be gesture target
+              pointerEvents: "none",
               margin: 0,
             }}
           />
@@ -168,68 +151,61 @@ function MenuView({
     [collapsed]
   );
 
-  const createMenu = (menu: DataNode) => {
-    if (menu.children && menu.children.length > 0) {
-      return (
-        // @ts-ignore
-        <SubMenu
-          // @ts-ignore
-          icon={menu.icon}
-          className={
-            menu.key === activeNote ? "dendron-ant-menu-submenu-selected" : ""
-          }
-          key={menu.key}
-          title={
-            <MenuItemTitle
-              menu={menu}
-              noteIndex={noteIndex}
-              onSubMenuSelect={onSubMenuSelect}
-            />
-          }
-        >
-          {menu.children.map((childMenu: DataNode) => {
-            return createMenu(childMenu);
-          })}
-        </SubMenu>
-      );
-    }
+  const renderTreeNode = (menu: DataNode, depth = 0) => {
+    const hasChildren = Boolean(menu.children && menu.children.length > 0);
+    const isOpen = expandKeys.includes(menu.key as string);
+    const isSelected = menu.key === activeNote;
+
     return (
-      // @ts-ignore
-      <MenuItem key={menu.key} icon={menu.icon}>
-        <MenuItemTitle
-          menu={menu}
-          noteIndex={noteIndex}
-          onSubMenuSelect={onSubMenuSelect}
-        />
-      </MenuItem>
+      <li
+        key={menu.key}
+        className={`dendron-tree-menu-item ${hasChildren ? "has-children" : "leaf"} ${
+          isSelected ? "selected" : ""
+        }`}
+      >
+        <div
+          className="dendron-tree-menu-row"
+          style={{ paddingLeft: 12 + depth * 18 }}
+        >
+          {hasChildren && (
+            <button
+              type="button"
+              className="dendron-tree-menu-expand-toggle"
+              onClick={() => onExpand(menu.key as string)}
+              aria-expanded={isOpen}
+              aria-label={isOpen ? "Collapse section" : "Expand section"}
+            >
+              <ExpandIcon isOpen={isOpen} />
+            </button>
+          )}
+          {menu.icon && (() => {
+            const iconNode: ReactNode =
+              typeof menu.icon === "function"
+                ? (menu.icon as (data: DataNode) => ReactNode)(menu)
+                : menu.icon;
+            return <span className="dendron-tree-menu-icon">{iconNode}</span>;
+          })()}
+          <MenuItemTitle
+            menu={menu}
+            noteIndex={noteIndex}
+            onSubMenuSelect={onSubMenuSelect}
+          />
+        </div>
+        {hasChildren && isOpen && (
+          <ul className="dendron-tree-menu-sublist">
+            {menu.children!.map((childMenu: DataNode) => renderTreeNode(childMenu, depth + 1))}
+          </ul>
+        )}
+      </li>
     );
   };
 
   return (
-    // @ts-ignore
-    <Menu
-      key={String(collapsed)}
-      className="dendron-tree-menu"
-      mode="inline"
-      {...(!collapsed && {
-        openKeys: expandKeys,
-        selectedKeys: [...expandKeys, activeNote],
-      })}
-      onOpenChange={onOpenChange}
-      inlineIndent={DENDRON_STYLE_CONSTANTS.SIDER.INDENT}
-      // @ts-ignore
-      expandIcon={ExpandIcon}
-      inlineCollapsed={collapsed}
-      // results in gray box otherwise when nav bar is too short for display
-      style={{ height: "100%" }}
-      onClick={({ key }) => {
-        onMenuItemClick(key);
-      }}
-    >
-      {roots.map((menu) => {
-        return createMenu(menu);
-      })}
-    </Menu>
+    <nav className={`dendron-tree-menu${collapsed ? " collapsed" : ""}`} aria-label="Tree menu">
+      <ul className="dendron-tree-menu-list">
+        {roots.map((menu) => renderTreeNode(menu, 0))}
+      </ul>
+    </nav>
   );
 }
 
@@ -241,19 +217,20 @@ function MenuItemTitle(
 ) {
   const { getNoteUrl } = useDendronRouter();
 
+  const title = typeof props.menu.title === "function" ? props.menu.title(props.menu) : props.menu.title;
+
   return (
-    // @ts-ignore
-    <Typography.Text ellipsis={{ tooltip: props.menu.title }}>
+    <Typography.Text className="dendron-tree-menu-title-text" ellipsis={{ tooltip: String(title) }}>
       <Link
         href={getNoteUrl(props.menu.key as string, {
           noteIndex: props.noteIndex!,
         })}
+        title={String(title)}
         onClick={() => {
           props.onSubMenuSelect(props.menu.key as string);
         }}
       >
-        {/* @ts-ignore */}
-        {props.menu.title}
+        {title}
       </Link>
     </Typography.Text>
   );

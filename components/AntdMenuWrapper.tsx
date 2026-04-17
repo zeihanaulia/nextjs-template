@@ -1,8 +1,6 @@
-import { Menu } from "antd";
-import { MenuProps } from "rc-menu";
+import { Menu, MenuProps } from "antd";
 
 function AntdMenuWrapper(props: MenuProps) {
-  // @ts-ignore
   return <Menu {...props} />;
 }
 

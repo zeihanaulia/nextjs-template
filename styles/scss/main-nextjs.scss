@@ -107,6 +107,109 @@ hr {
   }
 }
 
+.dendron-tree-menu {
+  font-size: 0.9375rem;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+
+    .dendron-tree-menu-list,
+    .dendron-tree-menu-sublist {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .dendron-tree-menu-sublist {
+      margin-left: 12px;
+      border-left: 1px solid rgba(57, 158, 52, 0.12);
+      padding-left: 0;
+    }
+
+    .dendron-tree-menu-item {
+      .dendron-tree-menu-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 12px;
+        cursor: pointer;
+        min-height: 38px;
+        transition: background-color 120ms ease;
+      }
+
+      .dendron-tree-menu-row:hover {
+        background-color: rgba(57, 158, 52, 0.08);
+      }
+
+      &.selected {
+        .dendron-tree-menu-row {
+          font-weight: 600;
+          background-color: rgba(57, 158, 52, 0.12);
+          border-left: 4px solid #399e34;
+          padding-left: 8px;
+        }
+      }
+    }
+
+    .dendron-tree-menu-expand-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #399e34;
+      cursor: pointer;
+    }
+
+    .dendron-tree-menu-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      min-width: 20px;
+      color: #399e34;
+    }
+
+    .dendron-tree-menu-title-text {
+      flex: 1;
+      min-width: 0;
+      display: block;
+      width: 100%;
+    }
+
+    .dendron-tree-menu-title-text a {
+      color: #399e34;
+      text-decoration: none;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .dendron-tree-menu-title-text a:hover {
+      text-decoration: underline;
+    }
+
+    &.collapsed {
+      .dendron-tree-menu-row {
+        justify-content: center;
+      }
+
+      .dendron-tree-menu-title-text,
+      .dendron-tree-menu-expand-toggle {
+        display: none;
+      }
+
+      .dendron-tree-menu-icon {
+        margin: 0;
+      }
+    }
+  }
+
 // override ant design toc
 .dendron-toc.ant-anchor-wrapper {
   .ant-anchor-link-title {
