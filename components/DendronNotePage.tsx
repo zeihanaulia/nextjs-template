@@ -92,7 +92,16 @@ export default function Note({
     });
   }, [id]);
 
-  const noteBody = id === note.id ? body : bodyFromState;
+  const rawNoteBody = id === note.id ? body : bodyFromState;
+  const noteBody = rawNoteBody?.replace(
+    /href="\/sotoy\/notes\/([^"#]+)"/g,
+    (_, noteId) => {
+      const parts = noteId.split(".");
+      const slug =
+        parts[0] === "notes" && parts.length > 1 ? parts.slice(1) : parts;
+      return `href="/${slug.join("/")}/"`;
+    }
+  );
 
   if (_.isUndefined(noteBody)) {
     return <DendronSpinner />;

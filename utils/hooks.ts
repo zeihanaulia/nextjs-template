@@ -30,6 +30,13 @@ function getSlugPath(slug?: string | string[]) {
   return Array.isArray(slug) ? slug.join("/") : slug;
 }
 
+function noteSlugPath(fname: string): string {
+  const parts = fname.split(".");
+  return parts[0] === "notes" && parts.length > 1
+    ? parts.slice(1).join("/")
+    : parts.join("/");
+}
+
 function getNoteIdFromSlug(
   slug: string | string[] | undefined,
   notes?: NotePropsByIdDict
@@ -40,7 +47,7 @@ function getNoteIdFromSlug(
   const slugPath = getSlugPath(slug);
   return _.chain(notes)
     .values()
-    .find((note) => note.fname.split(".").join("/") === slugPath)
+    .find((note) => noteSlugPath(note.fname) === slugPath)
     .get("id")
     .value() as string | undefined;
 }
@@ -60,7 +67,7 @@ export function useDendronRouter() {
     }
     const note = notes?.[id];
     if (note) {
-      return `/${note.fname.split(".").join("/")}`;
+      return `/${noteSlugPath(note.fname)}`;
     }
     return `/notes/${id}`;
   };

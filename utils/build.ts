@@ -73,10 +73,17 @@ function getSlugPath(slug: string | string[]): string {
   return Array.isArray(slug) ? slug.join("/") : slug;
 }
 
+function noteSlugPath(fname: string): string {
+  const parts = fname.split(".");
+  return parts[0] === "notes" && parts.length > 1
+    ? parts.slice(1).join("/")
+    : parts.join("/");
+}
+
 function getNoteBySlug(slug: string | string[]) {
   const slugPath = getSlugPath(slug);
   const { notes } = getNotes();
-  return _.find(notes, (note) => note.fname.split(".").join("/") === slugPath);
+  return _.find(notes, (note) => noteSlugPath(note.fname) === slugPath);
 }
 
 /**
@@ -90,7 +97,7 @@ export function getNotePaths(): GetStaticPathsResult<DendronNotePageParams> {
   const paths = Object.values(notes)
     .filter((note) => note.id !== noteIndex.id)
     .map((note) => {
-      return { params: { slug: note.fname.split(".") } };
+      return { params: { slug: noteSlugPath(note.fname).split("/") } };
     });
   return {
     paths,
@@ -108,6 +115,34 @@ export function getNoteMeta(id: string): Promise<NoteProps> {
 
 export function getNoteBySlugPath(slug: string | string[]) {
   return getNoteBySlug(slug);
+}
+
+/**
+ * Find a note by its fname directly (no dots-to-slashes conversion).
+ * Used for /notes/<fname> routes where Dendron HTML links preserve dots.
+ */
+export function getNoteByFnamePath(slug: string | string[]) {
+  const fname = Array.isArray(slug) ? slug.join("/") : slug;
+  const { notes } = getNotes();
+  return _.find(notes, (note) => note.fname === fname);
+}
+
+/**
+ * Generate /notes/<fname> paths for all notes.
+ * fname is kept as a single path segment with dots preserved,
+ * matching the link format that Dendron generates in HTML bodies.
+ */
+export function getNoteFnamePaths(): GetStaticPathsResult<DendronNotePageParams> {
+  const { notes, noteIndex } = getNotes();
+  const paths = Object.values(notes)
+    .filter((note) => note.id !== noteIndex.id)
+    .map((note) => {
+      return { params: { slug: [note.fname] } };
+    });
+  return {
+    paths,
+    fallback: false,
+  };
 }
 
 let _CONFIG_CACHE: DendronConfig | undefined;
