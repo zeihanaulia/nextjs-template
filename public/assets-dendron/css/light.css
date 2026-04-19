@@ -113,11 +113,35 @@ https://prismjs.com/download.html?themes=#themes=prism&languages=markup+css+clik
 	 background: hsla(0, 0%, 100%, .5);
  }
  
- .token.atrule,
- .token.attr-value,
- .token.keyword {
+.token.atrule,
+.token.attr-value,
+.token.keyword {
 	 color: #07a;
- }
+}
+
+/* Sidebar tree menu overrides: keep navigation neutral instead of inheriting the green theme accent. */
+.dendron-tree-menu .dendron-tree-menu-sublist {
+	 border-left-color: rgba(0, 0, 0, 0.08);
+}
+
+.dendron-tree-menu .dendron-tree-menu-item .dendron-tree-menu-row:hover {
+	 background-color: rgba(0, 0, 0, 0.04);
+}
+
+.dendron-tree-menu .dendron-tree-menu-item.selected .dendron-tree-menu-row {
+	 background-color: rgba(0, 0, 0, 0.06);
+	 border-left-color: #111111;
+}
+
+.dendron-tree-menu .dendron-tree-menu-expand-toggle,
+.dendron-tree-menu .dendron-tree-menu-icon,
+.dendron-tree-menu .dendron-tree-menu-title-text a {
+	 color: #222222;
+}
+
+.dendron-tree-menu .dendron-tree-menu-title-text a:hover {
+	 color: #111111;
+}
  
  .token.function,
  .token.class-name {

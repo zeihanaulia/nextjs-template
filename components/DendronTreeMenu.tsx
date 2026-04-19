@@ -165,7 +165,7 @@ function MenuView({
       >
         <div
           className="dendron-tree-menu-row"
-          style={{ paddingLeft: 12 + depth * 18 }}
+          style={{ paddingLeft: 12 + depth * 20 }}
         >
           {hasChildren && (
             <button
