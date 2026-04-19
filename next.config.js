@@ -11,6 +11,8 @@ const payload = {
   reactStrictMode: true,
   devIndicators: false, // disable: accesses window.next.router.components before router init → TypeError
   trailingSlash: true,
+  output: isProd ? 'export' : undefined,
+  images: { unoptimized: true },
   // Stub Node.js built-ins that @dendronhq/common-frontend pulls in via
   // @aws-amplify/core → @aws-sdk. These are server-only; the browser bundle
   // never actually calls them, but Turbopack requires explicit aliases.

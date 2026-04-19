@@ -15,7 +15,7 @@
     "buildCI": "echo nop",
     "start": "next start",
     "lint": "eslint . --ext .ts,.tsx",
-    "export": "npm run build && next export",
+    "export": "npm run build",
     "build:sitemap:ts": "tsc -p tsconfig.sitemap.json && mv dist/scripts/sitemap.js . ",
     "build:sitemap": "next-sitemap --config sitemap.js",
     "clean": "yarn rimraf public data out",
