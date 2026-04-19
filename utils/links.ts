@@ -2,19 +2,28 @@ import { DendronPublishingConfig, NoteProps } from "@dendronhq/common-all";
 import _ from "lodash";
 import { env } from "../env/client";
 
-export function getNoteUrl(opts: { note: NoteProps; noteIndex: NoteProps }) {
-  const { note, noteIndex } = opts;
+export function getPathWithPrefix(url: string) {
+  const normalizedUrl = url.startsWith("/") ? url : `/${url}`;
+  const out =
+    process.env.NODE_ENV !== "development" && env.NEXT_PUBLIC_ASSET_PREFIX
+      ? env.NEXT_PUBLIC_ASSET_PREFIX + normalizedUrl
+      : normalizedUrl;
+  return out;
+}
+
+export function getNotePath(note: NoteProps, noteIndex: NoteProps) {
   return note.id === noteIndex.id
     ? "/"
     : `/${note.fname.split(".").join("/")}`;
 }
 
+export function getNoteUrl(opts: { note: NoteProps; noteIndex: NoteProps }) {
+  const { note, noteIndex } = opts;
+  return getPathWithPrefix(getNotePath(note, noteIndex));
+}
+
 export function getAssetUrl(url: string) {
-  const out =
-    process.env.NODE_ENV !== "development" && env.NEXT_PUBLIC_ASSET_PREFIX
-      ? env.NEXT_PUBLIC_ASSET_PREFIX + url
-      : url;
-  return out;
+  return getPathWithPrefix(url);
 }
 
 /**

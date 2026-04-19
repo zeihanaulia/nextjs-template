@@ -18,6 +18,7 @@ import { useCombinedDispatch } from "../features";
 import { browserEngineSlice } from "../features/engine";
 import { DENDRON_STYLE_CONSTANTS } from "../styles/constants";
 import { useDendronRouter } from "../utils/hooks";
+import { getAssetUrl } from "../utils/links";
 import { MermaidScript } from "./MermaidScript";
 import { DendronNoteGiscusWidget } from "./DendronNoteGiscusWidget";
 
@@ -64,6 +65,9 @@ export default function Note({
   // --- Hooks
   const dispatch = useCombinedDispatch();
   logger.info({ ctx: "enter", id });
+  const publishingConfig = ConfigUtils.getPublishing(config);
+  const configuredAssetPrefix = publishingConfig.assetsPrefix || "";
+  const escapedAssetPrefix = _.escapeRegExp(configuredAssetPrefix);
 
   // setup body
   React.useEffect(() => {
@@ -82,7 +86,7 @@ export default function Note({
     }
     logger.info({ ctx: "updateNoteBody:fetch:pre", id });
     // otherwise, dynamically fetch page
-    fetch(`/data/notes/${id}.html`).then(async (resp) => {
+    fetch(getAssetUrl(`/data/notes/${id}.html`)).then(async (resp) => {
       logger.info({ ctx: "updateNoteBody:fetch:post", id });
       const contents = await resp.text();
       setBody(contents);
@@ -93,15 +97,16 @@ export default function Note({
   }, [id]);
 
   const rawNoteBody = id === note.id ? body : bodyFromState;
-  const noteBody = rawNoteBody?.replace(
-    /href="\/sotoy\/notes\/([^"#]+)"/g,
-    (_, noteId) => {
-      const parts = noteId.split(".");
-      const slug =
-        parts[0] === "notes" && parts.length > 1 ? parts.slice(1) : parts;
-      return `href="/${slug.join("/")}/"`;
-    }
+  const noteHrefPattern = new RegExp(
+    `href="(?:${escapedAssetPrefix})?/notes/([^"#]+)"`,
+    "g"
   );
+  const noteBody = rawNoteBody?.replace(noteHrefPattern, (_, noteId) => {
+    const parts = noteId.split(".");
+    const slug =
+      parts[0] === "notes" && parts.length > 1 ? parts.slice(1) : parts;
+    return `href="${getAssetUrl(`/${slug.join("/")}/`)}"`;
+  });
 
   if (_.isUndefined(noteBody)) {
     return <DendronSpinner />;
