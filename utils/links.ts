@@ -19,7 +19,7 @@ export function getNotePath(note: NoteProps, noteIndex: NoteProps) {
 
 export function getNoteUrl(opts: { note: NoteProps; noteIndex: NoteProps }) {
   const { note, noteIndex } = opts;
-  return getPathWithPrefix(getNotePath(note, noteIndex));
+  return getNotePath(note, noteIndex);
 }
 
 export function getAssetUrl(url: string) {

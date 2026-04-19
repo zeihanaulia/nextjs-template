@@ -12,7 +12,6 @@ import { NextRouter, useRouter } from "next/router";
 import React from "react";
 import { useEngineAppSelector } from "../features/engine/hooks";
 import { fetchNoteBody } from "./fetchers";
-import { getPathWithPrefix } from "./links";
 
 export type NoteRouterQuery = {
   slug?: string | string[];
@@ -64,13 +63,13 @@ export function useDendronRouter() {
     opts: { noteIndex: NoteProps }
   ) => {
     if (id === opts.noteIndex.id) {
-      return getPathWithPrefix("/");
+      return "/";
     }
     const note = notes?.[id];
     if (note) {
-      return getPathWithPrefix(`/${noteSlugPath(note.fname)}`);
+      return `/${noteSlugPath(note.fname)}`;
     }
-    return getPathWithPrefix(`/notes/${id}`);
+    return `/notes/${id}`;
   };
   const changeActiveNote = (id: string, opts: { noteIndex: NoteProps }) => {
     router.push(getNoteUrl(id, opts));
