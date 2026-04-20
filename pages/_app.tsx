@@ -68,6 +68,16 @@ function AppContainer(appProps: AppProps & { pageProps: PageProps }) {
     );
   }
 
+  if (router.pathname === "/graph") {
+    return (
+      <Provider store={combinedStore}>
+        <ThemeSwitcherProvider themeMap={themes} defaultTheme={defaultTheme}>
+          <appProps.Component {...appProps.pageProps} />
+        </ThemeSwitcherProvider>
+      </Provider>
+    );
+  }
+
   return (
     <Provider store={combinedStore}>
       <ThemeSwitcherProvider themeMap={themes} defaultTheme={defaultTheme}>

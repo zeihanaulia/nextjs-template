@@ -173,3 +173,64 @@ export async function getCustomHead(): Promise<string | null> {
   const headPath = path.join(publicDir, "header.html");
   return fs.readFileSync(headPath, { encoding: "utf-8" });
 }
+
+export type GraphNode = {
+  id: string;
+  fname: string;
+  title: string;
+  group: string;
+};
+
+export type GraphLink = {
+  source: string;
+  target: string;
+  type: "wiki" | "hierarchy";
+};
+
+export type GraphData = {
+  nodes: GraphNode[];
+  links: GraphLink[];
+};
+
+export function getGraphData(): GraphData {
+  const { notes } = getNotes();
+  const noteIds = Object.keys(notes);
+
+  const nodes: GraphNode[] = noteIds.map((id) => {
+    const note = notes[id];
+    const group = note.fname.split(".")[0];
+    return { id, fname: note.fname, title: note.title || note.fname, group };
+  });
+
+  const links: GraphLink[] = [];
+  const noteIdByFname: Record<string, string> = {};
+  noteIds.forEach((id) => {
+    noteIdByFname[notes[id].fname] = id;
+  });
+
+  // Wiki links (explicit [[wikilinks]] in note body)
+  noteIds.forEach((id) => {
+    const note = notes[id];
+    (note.links || [])
+      .filter((l: any) => l.type === "wiki")
+      .forEach((l: any) => {
+        const toFname = l.to && l.to.fname;
+        const toId = toFname && noteIdByFname[toFname];
+        if (toId && toId !== id) {
+          links.push({ source: id, target: toId, type: "wiki" });
+        }
+      });
+  });
+
+  // Hierarchy links (parent → child)
+  noteIds.forEach((id) => {
+    const note = notes[id];
+    (note.children || []).forEach((childId: string) => {
+      if (notes[childId]) {
+        links.push({ source: id, target: childId, type: "hierarchy" });
+      }
+    });
+  });
+
+  return { nodes, links };
+}

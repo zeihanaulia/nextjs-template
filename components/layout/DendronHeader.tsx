@@ -1,6 +1,7 @@
-import { MenuOutlined } from "@ant-design/icons";
-import { Col, Layout, Row } from "antd";
+import { MenuOutlined, ApartmentOutlined } from "@ant-design/icons";
+import { Col, Layout, Row, Tooltip } from "antd";
 import * as React from "react";
+import Link from "next/link";
 import { useDendronContext } from "../../context/useDendronContext";
 import { DENDRON_STYLE_CONSTANTS } from "../../styles/constants";
 import DendronLogoOrTitle from "../DendronLogoOrTitle";
@@ -36,7 +37,27 @@ export const DendronHeader: React.FC<any> = (props) => {
           <DendronLogoOrTitle />
         </Col>
         <Col xs={0} sm={20} md={20} lg={19} className="gutter-row">
-          <DendronSearch {...props} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <DendronSearch {...props} />
+            <Tooltip title="Knowledge Graph">
+              <Link
+                href="/graph"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  color: "#4b5563",
+                  textDecoration: "none",
+                  flexShrink: 0,
+                  fontSize: 20,
+                  lineHeight: 1,
+                }}
+              >
+                <ApartmentOutlined />
+              </Link>
+            </Tooltip>
+          </div>
         </Col>
         <Col
           xs={4}
