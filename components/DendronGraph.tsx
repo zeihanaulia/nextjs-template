@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { GraphData, GraphNode } from "../utils/build";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
+// Node group color definitions used by the graph and legend.
 const GROUP_COLORS: Record<string, string> = {
   zettel: "#7c3aed",
   "book-summaries": "#0891b2",
@@ -14,13 +15,18 @@ const GROUP_COLORS: Record<string, string> = {
   tags: "#64748b",
   root: "#94a3b8",
 };
+
+// Resolve a group name to its display color.
 function groupColor(g: string): string {
   return GROUP_COLORS[g] ?? "#6366f1";
 }
 
-// ── Tree data type ────────────────────────────────────────────────────────────
+// ── Tree data type ───────────────────────────────────────────────────────────
+// Graph node typed for the hierarchical tree layout.
 type TreeNodeData = GraphNode & { children?: TreeNodeData[] };
 
+// Build a root-based hierarchical tree from graph hierarchy links.
+// The result drives the D3 radial layout, with parent/child relationships.
 function buildHierarchy(data: GraphData): TreeNodeData {
   const childrenById: Record<string, string[]> = {};
   const hasParent = new Set<string>();
@@ -39,6 +45,7 @@ function buildHierarchy(data: GraphData): TreeNodeData {
   const topLevel = data.nodes.filter((n) => !hasParent.has(n.id));
 
   function build(id: string, visited = new Set<string>()): TreeNodeData | null {
+    // Recursively convert each note into a tree node, guarding against cycles.
     if (visited.has(id)) return null;
     visited.add(id);
     const node = nodeMap.get(id);
@@ -71,23 +78,28 @@ export default function DendronGraph({ data }: DendronGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const router = useRouter();
 
+  // Selection state for node interactions.
   const [selection, setSelection] = useState<Selection | null>(null);
+  // Hover text shown in the UI when the pointer is over a node.
   const [hoveredTitle, setHoveredTitle] = useState<string | null>(null);
+  // Filter state for the controls bar.
   const [zettelOnly, setZettelOnly] = useState(false);
   const [selectedMoc, setSelectedMoc] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagsCollapsed, setTagsCollapsed] = useState(true);
-  const TAGS_PREVIEW = 15;
+  const TAGS_PREVIEW = 15; // Number of tags shown before collapsing.
 
+  // D3 rendering state held outside of React state for performance.
   const posMapRef = useRef<Map<string, PosEntry>>(new Map());
   const wikiLayerRef = useRef<d3.Selection<any, any, any, any> | null>(null);
   const treeLinkLayerRef = useRef<d3.Selection<any, any, any, any> | null>(null);
   const nodeGroupRef = useRef<d3.Selection<SVGGElement, d3.HierarchyNode<TreeNodeData>, SVGGElement, unknown> | null>(null);
-  // Ref to avoid stale closure in D3 click handler
+  // Ref to avoid stale closure in D3 click handler.
   const selectionRef = useRef<Selection | null>(null);
   useEffect(() => { selectionRef.current = selection; }, [selection]);
 
   // ── Filtered data ─────────────────────────────────────────────────────────
+  // Apply UI filters to the graph data, returning only nodes and links that match.
   const filteredData = useMemo(() => {
     if (!zettelOnly && selectedTags.length === 0 && !selectedMoc) return data;
     let candidates = data.nodes;
@@ -118,11 +130,13 @@ export default function DendronGraph({ data }: DendronGraphProps) {
     return { nodes: candidates, links: filteredLinks };
   }, [data, zettelOnly, selectedMoc, selectedTags]);
 
+  // Cached list of all MOC notes so the UI can render MOC filter chips.
   const mocNotes = useMemo(
     () => data.nodes.filter((n) => n.tags.some((t) => t === "moc")),
     [data.nodes]
   );
 
+  // Cached set of all tags exposed by the graph data.
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>();
     data.nodes.forEach((n) => n.tags.forEach((t) => tagSet.add(t)));
@@ -130,6 +144,7 @@ export default function DendronGraph({ data }: DendronGraphProps) {
   }, [data.nodes]);
 
   // Wiki links index (bidirectional)
+  // Used to highlight connected nodes when a selection is active.
   const wikiByNode = useMemo(() => {
     const map = new Map<string, string[]>();
     filteredData.links
