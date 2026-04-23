@@ -53,7 +53,14 @@ function buildHierarchy(data: GraphData): TreeNodeData {
     .map((n) => build(n.id))
     .filter((x): x is TreeNodeData => x !== null);
 
-  return { id: "__root__", fname: "", title: "Knowledge Base", group: "root", children };
+  return {
+    id: "__root__",
+    fname: "",
+    title: "Knowledge Base",
+    group: "root",
+    tags: [],
+    children,
+  };
 }
 
 interface PosEntry { x: number; y: number; angle: number; dragged?: boolean; }
@@ -66,6 +73,11 @@ export default function DendronGraph({ data }: DendronGraphProps) {
 
   const [selection, setSelection] = useState<Selection | null>(null);
   const [hoveredTitle, setHoveredTitle] = useState<string | null>(null);
+  const [zettelOnly, setZettelOnly] = useState(false);
+  const [selectedMoc, setSelectedMoc] = useState<string>("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagsCollapsed, setTagsCollapsed] = useState(true);
+  const TAGS_PREVIEW = 15;
 
   const posMapRef = useRef<Map<string, PosEntry>>(new Map());
   const wikiLayerRef = useRef<d3.Selection<any, any, any, any> | null>(null);
@@ -75,10 +87,52 @@ export default function DendronGraph({ data }: DendronGraphProps) {
   const selectionRef = useRef<Selection | null>(null);
   useEffect(() => { selectionRef.current = selection; }, [selection]);
 
+  // ── Filtered data ─────────────────────────────────────────────────────────
+  const filteredData = useMemo(() => {
+    if (!zettelOnly && selectedTags.length === 0 && !selectedMoc) return data;
+    let candidates = data.nodes;
+    if (zettelOnly) candidates = candidates.filter((n) => n.group === "zettel");
+    if (selectedMoc) {
+      const wikiAdj = new Map<string, Set<string>>();
+      data.links.filter((l) => l.type === "wiki").forEach((l) => {
+        const src = l.source as string;
+        const tgt = l.target as string;
+        if (!wikiAdj.has(src)) wikiAdj.set(src, new Set());
+        if (!wikiAdj.has(tgt)) wikiAdj.set(tgt, new Set());
+        wikiAdj.get(src)!.add(tgt);
+        wikiAdj.get(tgt)!.add(src);
+      });
+      const neighborhood = new Set([
+        selectedMoc,
+        ...Array.from(wikiAdj.get(selectedMoc) ?? []),
+      ]);
+      candidates = candidates.filter((n) => neighborhood.has(n.id));
+    }
+    if (selectedTags.length > 0) {
+      candidates = candidates.filter((n) => selectedTags.some((t) => n.tags.includes(t)));
+    }
+    const nodeIdSet = new Set(candidates.map((n) => n.id));
+    const filteredLinks = data.links.filter(
+      (l) => nodeIdSet.has(l.source as string) && nodeIdSet.has(l.target as string)
+    );
+    return { nodes: candidates, links: filteredLinks };
+  }, [data, zettelOnly, selectedMoc, selectedTags]);
+
+  const mocNotes = useMemo(
+    () => data.nodes.filter((n) => n.tags.some((t) => t === "moc")),
+    [data.nodes]
+  );
+
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    data.nodes.forEach((n) => n.tags.forEach((t) => tagSet.add(t)));
+    return Array.from(tagSet).sort();
+  }, [data.nodes]);
+
   // Wiki links index (bidirectional)
   const wikiByNode = useMemo(() => {
     const map = new Map<string, string[]>();
-    data.links
+    filteredData.links
       .filter((l) => l.type === "wiki")
       .forEach((l) => {
         const src = l.source as string;
@@ -89,29 +143,29 @@ export default function DendronGraph({ data }: DendronGraphProps) {
         map.get(tgt)!.push(src);
       });
     return map;
-  }, [data]);
+  }, [filteredData]);
 
   // Degree map: total connections per node (wiki + hierarchy)
   const degreeMap = useMemo(() => {
     const map = new Map<string, number>();
-    data.nodes.forEach((n) => map.set(n.id, 0));
-    data.links.forEach((l) => {
+    filteredData.nodes.forEach((n) => map.set(n.id, 0));
+    filteredData.links.forEach((l) => {
       const src = l.source as string;
       const tgt = l.target as string;
       map.set(src, (map.get(src) ?? 0) + 1);
       map.set(tgt, (map.get(tgt) ?? 0) + 1);
     });
     return map;
-  }, [data]);
+  }, [filteredData]);
 
   // Top 5 most connected nodes
   const topHubs = useMemo(() => {
-    return [...data.nodes]
+    return [...filteredData.nodes]
       .sort((a, b) => (degreeMap.get(b.id) ?? 0) - (degreeMap.get(a.id) ?? 0))
       .slice(0, 6)
       .map((n) => ({ ...n, degree: degreeMap.get(n.id) ?? 0 }))
       .filter((n) => n.degree > 0);
-  }, [data.nodes, degreeMap]);
+  }, [filteredData.nodes, degreeMap]);
 
   // ── Build radial tree ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -125,7 +179,7 @@ export default function DendronGraph({ data }: DendronGraphProps) {
     const W = svgRef.current.clientWidth || window.innerWidth;
     const H = svgRef.current.clientHeight || window.innerHeight - 60;
 
-    const hierarchyData = buildHierarchy(data);
+    const hierarchyData = buildHierarchy(filteredData);
     const root = d3.hierarchy(hierarchyData);
     const nodeCount = root.descendants().length;
     const radius = Math.max(200, Math.min(520, nodeCount * 4.5));
@@ -302,7 +356,7 @@ export default function DendronGraph({ data }: DendronGraphProps) {
         return t.length > max ? t.slice(0, max - 2) + "…" : t;
       });
 
-  }, [data, router, degreeMap]);
+  }, [filteredData, router, degreeMap]);
 
   // ── Wiki link overlay — updated on selection change only ──────────────────
   useEffect(() => {
@@ -356,8 +410,8 @@ export default function DendronGraph({ data }: DendronGraphProps) {
 
   }, [selection, wikiByNode]);
 
-  const groups = Array.from(new Set(data.nodes.map((n) => n.group))).sort();
-  const wikiLinkCount = data.links.filter((l) => l.type === "wiki").length;
+  const groups = Array.from(new Set(filteredData.nodes.map((n) => n.group))).sort();
+  const wikiLinkCount = filteredData.links.filter((l) => l.type === "wiki").length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f8fafc", position: "relative" }}>
@@ -365,7 +419,23 @@ export default function DendronGraph({ data }: DendronGraphProps) {
       {/* Controls bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "8px 16px", background: "#fff", borderBottom: "1px solid #e5e7eb", flexWrap: "wrap", flexShrink: 0, zIndex: 2 }}>
         <span style={{ fontWeight: 600, color: "#374151", fontSize: 14 }}>Knowledge Graph</span>
-        <span style={{ color: "#9ca3af", fontSize: 12 }}>{data.nodes.length} notes · {wikiLinkCount} wiki links</span>
+        <span style={{ color: "#9ca3af", fontSize: 12 }}>
+          {filteredData.nodes.length === data.nodes.length
+            ? `${data.nodes.length} notes · ${wikiLinkCount} wiki links`
+            : `${filteredData.nodes.length}/${data.nodes.length} notes · ${wikiLinkCount} wiki links`}
+        </span>
+        <button
+          onClick={() => { setZettelOnly((v) => !v); setSelectedMoc(""); setSelectedTags([]); }}
+          style={{
+            padding: "2px 10px", borderRadius: 12, border: "1px solid",
+            borderColor: zettelOnly ? "#7c3aed" : "#d1d5db",
+            background: zettelOnly ? "#f5f3ff" : "transparent",
+            color: zettelOnly ? "#7c3aed" : "#9ca3af",
+            cursor: "pointer", fontSize: 11, fontWeight: zettelOnly ? 600 : 400,
+          }}
+        >
+          zettel
+        </button>
         <span style={{ color: "#6b7280", fontSize: 11, borderLeft: "1px solid #e5e7eb", paddingLeft: 12 }}>🔥 top hub:</span>
         {topHubs.slice(0, 5).map((n) => (
           <span key={n.id} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11 }}>
@@ -383,6 +453,64 @@ export default function DendronGraph({ data }: DendronGraphProps) {
           ))}
         </div>
       </div>
+
+      {/* Filter chips — always visible */}
+      {(mocNotes.length > 0 || availableTags.length > 0) && (
+        <div style={{ background: "#faf5ff", borderBottom: "1px solid #ede9fe", flexShrink: 0, zIndex: 2 }}>
+          {/* MOC row */}
+          {mocNotes.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 16px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600, flexShrink: 0, minWidth: 36 }}>MOC:</span>
+              {mocNotes.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => setSelectedMoc((v) => v === n.id ? "" : n.id)}
+                  style={{
+                    padding: "1px 9px", borderRadius: 10, border: "1px solid",
+                    borderColor: selectedMoc === n.id ? "#7c3aed" : "#c4b5fd",
+                    background: selectedMoc === n.id ? "#7c3aed" : "#fff",
+                    color: selectedMoc === n.id ? "#fff" : "#7c3aed",
+                    cursor: "pointer", fontSize: 11, flexShrink: 0,
+                  }}
+                >
+                  {n.title}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Tags row — collapsible */}
+          {availableTags.length > 0 && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "4px 16px 6px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, color: "#6366f1", fontWeight: 600, flexShrink: 0, minWidth: 36, paddingTop: 2 }}>tags:</span>
+              {(tagsCollapsed ? availableTags.slice(0, TAGS_PREVIEW) : availableTags).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setSelectedTags((v) => v.includes(t) ? v.filter((x) => x !== t) : [...v, t])}
+                  style={{
+                    padding: "1px 9px", borderRadius: 10, border: "1px solid",
+                    borderColor: selectedTags.includes(t) ? "#6366f1" : "#d1d5db",
+                    background: selectedTags.includes(t) ? "#6366f1" : "#fff",
+                    color: selectedTags.includes(t) ? "#fff" : "#6b7280",
+                    cursor: "pointer", fontSize: 11, flexShrink: 0,
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+              <button
+                onClick={() => setTagsCollapsed((v) => !v)}
+                style={{
+                  padding: "1px 9px", borderRadius: 10, border: "1px dashed #d1d5db",
+                  background: "transparent", color: "#9ca3af",
+                  cursor: "pointer", fontSize: 11, flexShrink: 0,
+                }}
+              >
+                {tagsCollapsed ? `+${availableTags.length - TAGS_PREVIEW} more` : "show less"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Selected node banner */}
       <div style={{ position: "absolute", top: 54, left: "50%", transform: "translateX(-50%)", zIndex: 3, pointerEvents: "none", transition: "opacity 0.2s", opacity: selection ? 1 : 0 }}>

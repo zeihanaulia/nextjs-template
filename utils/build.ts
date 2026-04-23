@@ -179,6 +179,7 @@ export type GraphNode = {
   fname: string;
   title: string;
   group: string;
+  tags: string[];
 };
 
 export type GraphLink = {
@@ -199,7 +200,9 @@ export function getGraphData(): GraphData {
   const nodes: GraphNode[] = noteIds.map((id) => {
     const note = notes[id];
     const group = note.fname.split(".")[0];
-    return { id, fname: note.fname, title: note.title || note.fname, group };
+    const rawTags = note.tags;
+    const tags: string[] = Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags as string] : [];
+    return { id, fname: note.fname, title: note.title || note.fname, group, tags };
   });
 
   const links: GraphLink[] = [];
